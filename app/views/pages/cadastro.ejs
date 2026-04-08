@@ -8,6 +8,13 @@
 <body>
     
     <h1><%= tituloPagina %></h1>
+    <% if (typeof errors !== 'undefined' && errors.length > 0) { %>
+        <ul style="color: red;">
+            <% errors.forEach(error => { %>
+                <li><%= error.msg %></li>
+            <% }); %>
+        </ul>
+    <% } %>
     <form action="/manter-tarefa" method="post">
         <input type="hidden" name="id" id="id" value="<%= tarefa.id_tarefa %>">
         <label for="nome">Tarefa:</label><br>

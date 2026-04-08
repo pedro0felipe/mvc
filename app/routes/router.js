@@ -1,6 +1,7 @@
 var express = require("express");
 var router = express.Router();
 const { tarefasModel } = require("../models/tarefasModel"); //usar sempre o {}
+const { body, validationResult } = require('express-validator');
 const moment = require("moment");
 moment.locale('pt-br');
 
@@ -28,74 +29,85 @@ router.get("/nova-tarefa", (req, res) => {
         });
 });
 
-router.post("/manter-tarefa", async (req, res) => {
-    const objDados = {
-        id : req.body.id,
-        nome: req.body.nome,
-        prazo: req.body.prazo,
-        situacao: req.body.situacao
-    }
-
-    try {
-        if(objDados.id == 0){
-            const result = await tarefasModel.create(objDados);  
-        }else{
-            const result = await tarefasModel.update(objDados);  
-        }
-        
-        res.redirect("/");
-    } catch (erro) {
-        console.log(erro);
-    }
-})
-
-
 router.get("/editar", async (req, res) => {
     res.locals.moment = moment;
-    //recuperando a querystring
     const id = req.query.id;
     try {
         const result = await tarefasModel.findById(id);
-        res.render("pages/cadastro",
-            {
-                tituloPagina: "Alterar Tarefa", tituloAba: "Edição de Tarefa",
+        if (result.length > 0) {
+            res.render("pages/cadastro", {
+                tituloPagina: "Editar Tarefa",
+                tituloAba: "Editar",
                 tarefa: result[0]
             });
-    } catch (erro) {
-        console.log(erro)
-    }
-
-});
-
-
-router.get("/teste-insert", async (req, res) => {
-
-    const objDados = {
-        nome: "limpar gabinete PC",
-        prazo: "2026-03-23"
-    }
-    try {
-        const result = await tarefasModel.create(objDados);
-        res.send(result);
+        } else {
+            res.redirect("/");
+        }
     } catch (erro) {
         console.log(erro);
+        res.redirect("/");
     }
 });
 
-//exclusão física - hard delete
-router.get("/teste-delete", async (req, res) => {
+router.post("/manter-tarefa", 
+    [
+        body('nome').notEmpty().withMessage('Nome é obrigatório').isLength({ min: 3, max: 45 }).withMessage('Nome deve ter entre 3 e 45 caracteres'),
+        body('prazo').isDate().withMessage('Prazo deve ser uma data válida'),
+        body('situacao').isInt({ min: 0, max: 4 }).withMessage('Situação deve ser um número entre 0 e 4')
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            res.locals.moment = moment;
+            return res.render("pages/cadastro", {
+                tituloPagina: req.body.id == 0 ? "Cadastro de Tarefas" : "Editar Tarefa",
+                tituloAba: req.body.id == 0 ? "Cadastro" : "Editar",
+                tarefa: req.body,
+                errors: errors.array()
+            });
+        }
+
+        const objDados = {
+            id : req.body.id,
+            nome: req.body.nome,
+            prazo: req.body.prazo,
+            situacao: req.body.situacao
+        }
+
+        try {
+            if(objDados.id == 0){
+                const result = await tarefasModel.create(objDados);  
+            }else{
+                const result = await tarefasModel.update(objDados);  
+            }
+            
+            res.redirect("/");
+        } catch (erro) {
+            console.log(erro);
+            res.redirect("/");
+        }
+    }
+)
 
 
+router.get("/delete-fisico/:id", async (req, res) => {
+    try {
+        await tarefasModel.deleteFisico(req.params.id);
+        res.redirect("/");
+    } catch (erro) {
+        console.log(erro);
+        res.redirect("/");
+    }
+});
 
-})
-
-//exclusão lógica - soft delete
-router.get("/teste-delete-logico", async (req, res) => {
-
-
-})
-
-
-
+router.get("/delete-logico/:id", async (req, res) => {
+    try {
+        await tarefasModel.deleteLogico(req.params.id);
+        res.redirect("/");
+    } catch (erro) {
+        console.log(erro);
+        res.redirect("/");
+    }
+});
 
 module.exports = router;

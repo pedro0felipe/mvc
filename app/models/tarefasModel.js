@@ -71,7 +71,30 @@ const tarefasModel = {
 
     
     // DELETE - físico
+    deleteFisico: async (id)=>{
+        try{
+            const [result] = await pool.query(
+                "delete from tarefas where id_tarefa = ?",
+                [id]
+            );
+            return result;
+        }catch(erro){
+            return erro;
+        }
+    },
+
     // DELETE - lógico
+    deleteLogico: async (id)=>{
+        try{
+            const [result] = await pool.query(
+                "update tarefas set status_tarefa = 0 where id_tarefa = ?",
+                [id]
+            );
+            return result;
+        }catch(erro){
+            return erro;
+        }
+    }
 
 }
 

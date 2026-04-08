@@ -35,7 +35,11 @@
                     <td><%= item.nome_tarefa %></td>
                     <td><%= moment(item.prazo_tarefa).format('L') %></td>
                     <td><%= situacao[item.situacao_tarefa] %></td>
-                    <td><a href="/editar?id=<%= item.id_tarefa %>">Editar</a></td>
+                    <td>
+                        <a href="/editar?id=<%= item.id_tarefa %>">Editar</a> | 
+                        <a href="/delete-logico/<%= item.id_tarefa %>" onclick="return confirm('Tem certeza que deseja deletar logicamente?')">Delete Lógico</a> | 
+                        <a href="/delete-fisico/<%= item.id_tarefa %>" onclick="return confirm('Tem certeza que deseja deletar fisicamente?')">Delete Físico</a>
+                    </td>
                 </tr>
             <% 
                 });
