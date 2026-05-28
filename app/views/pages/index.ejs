@@ -6,6 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> Home - Lista Tarefas</title>
+    <link rel="stylesheet" href="css/estilo.css">
 </head>
 
 <body>
@@ -35,11 +36,7 @@
                     <td><%= item.nome_tarefa %></td>
                     <td><%= moment(item.prazo_tarefa).format('L') %></td>
                     <td><%= situacao[item.situacao_tarefa] %></td>
-                    <td>
-                        <a href="/editar?id=<%= item.id_tarefa %>">Editar</a> | 
-                        <a href="/delete-logico/<%= item.id_tarefa %>" onclick="return confirm('Tem certeza que deseja deletar logicamente?')">Delete Lógico</a> | 
-                        <a href="/delete-fisico/<%= item.id_tarefa %>" onclick="return confirm('Tem certeza que deseja deletar fisicamente?')">Delete Físico</a>
-                    </td>
+                    <td><a href="/editar?id=<%= item.id_tarefa %>">Editar</a></td>
                 </tr>
             <% 
                 });
@@ -50,6 +47,28 @@
             <% } %>
         </tbody>
     </table>
+
+    <% if(notificador){ %>
+        <nav>
+            <ul>
+                <%
+                for(var i = 1; i <= notificador.totalPaginas; i++){
+                    if(notificador.paginaAtual == i){    
+                    %>
+                        <li ><a class="atual" href="/?pagina=<%=i%>"><%=i%></a></li>
+                     <%
+                    }else{
+                    %>
+                        <li ><a href="/?pagina=<%=i%>"><%=i%></a></li>
+                    <%
+                    }
+                }
+                %>
+            </ul>
+        </nav>
+    <%  } %>
+
+
 
 </body>
 

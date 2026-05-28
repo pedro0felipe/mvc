@@ -1,16 +1,44 @@
 var express = require("express");
 var router = express.Router();
 const { tarefasModel } = require("../models/tarefasModel"); //usar sempre o {}
-const { body, validationResult } = require('express-validator');
 const moment = require("moment");
 moment.locale('pt-br');
 
 router.get("/", async function (req, res) {
     res.locals.moment = moment;
+    //recuperar a página caso não exista definir como página 1
+    let pagina = req.query.pagina == undefined ? 1 : req.query.pagina;
+    // página -> offset 
+    // qtde por página -> 
+    // pagina 1 -> ofsset -> 0 ( pagina -1 * 5)
+    // pagina 2 -> ofsset -> 5 ( pagina -1 * 5)
+    // pagina 3 -> ofsset -> 10 ( pagina -1 * 5)
+    const qtde = 5;
+    let offset = (pagina-1) * qtde;
+    let total = 0;
+
     try {
-        const result = await tarefasModel.findAll();
+        const totalRegistros = await tarefasModel.totRegistros();
+        total = Number.isInteger(totalRegistros) ? Math.ceil(totalRegistros / qtde) : 0;
+    } catch (erro) {
+        console.log("Erro ao calcular total de registros:", erro);
+        total = 0;
+    }
+
+    if(total > 1){
+        //paginação 
+        var paginador = {paginaAtual:pagina,totalPaginas:total};
+        
+    }else{
+        // apenas 1 página de resultados
+        var paginador = null;
+    }
+    
+    try {
+        const result = await tarefasModel.findAll(offset,qtde);
         console.log(result)
-        res.render("pages/index", { listaTarefas: result })
+        res.render("pages/index",
+             { listaTarefas: result, notificador:paginador })
     } catch (erro) {
         console.log(erro);
     }
@@ -29,85 +57,81 @@ router.get("/nova-tarefa", (req, res) => {
         });
 });
 
+router.post("/manter-tarefa", async (req, res) => {
+    const objDados = {
+        id : req.body.id,
+        nome: req.body.nome,
+        prazo: req.body.prazo,
+        situacao: req.body.situacao
+    }
+
+    try {
+        if(objDados.id == 0){
+            const result = await tarefasModel.create(objDados);
+            if (result && result.code) {
+                console.log("Erro ao criar tarefa:", result);
+            }
+        } else {
+            const result = await tarefasModel.update(objDados);
+            if (result && result.code) {
+                console.log("Erro ao atualizar tarefa:", result);
+            }
+        }
+        
+        res.redirect("/");
+    } catch (erro) {
+        console.log(erro);
+    }
+})
+
+
 router.get("/editar", async (req, res) => {
     res.locals.moment = moment;
+    //recuperando a querystring
     const id = req.query.id;
     try {
         const result = await tarefasModel.findById(id);
-        if (result.length > 0) {
-            res.render("pages/cadastro", {
-                tituloPagina: "Editar Tarefa",
-                tituloAba: "Editar",
+        res.render("pages/cadastro",
+            {
+                tituloPagina: "Alterar Tarefa", tituloAba: "Edição de Tarefa",
                 tarefa: result[0]
             });
-        } else {
-            res.redirect("/");
-        }
     } catch (erro) {
-        console.log(erro);
-        res.redirect("/");
+        console.log(erro)
     }
+
 });
 
-router.post("/manter-tarefa", 
-    [
-        body('nome').notEmpty().withMessage('Nome é obrigatório').isLength({ min: 3, max: 45 }).withMessage('Nome deve ter entre 3 e 45 caracteres'),
-        body('prazo').isDate().withMessage('Prazo deve ser uma data válida'),
-        body('situacao').isInt({ min: 0, max: 4 }).withMessage('Situação deve ser um número entre 0 e 4')
-    ],
-    async (req, res) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            res.locals.moment = moment;
-            return res.render("pages/cadastro", {
-                tituloPagina: req.body.id == 0 ? "Cadastro de Tarefas" : "Editar Tarefa",
-                tituloAba: req.body.id == 0 ? "Cadastro" : "Editar",
-                tarefa: req.body,
-                errors: errors.array()
-            });
-        }
 
-        const objDados = {
-            id : req.body.id,
-            nome: req.body.nome,
-            prazo: req.body.prazo,
-            situacao: req.body.situacao
-        }
+router.get("/teste-insert", async (req, res) => {
 
-        try {
-            if(objDados.id == 0){
-                const result = await tarefasModel.create(objDados);  
-            }else{
-                const result = await tarefasModel.update(objDados);  
-            }
-            
-            res.redirect("/");
-        } catch (erro) {
-            console.log(erro);
-            res.redirect("/");
-        }
+    const objDados = {
+        nome: "limpar gabinete PC",
+        prazo: "2026-03-23",
+        situacao: 1
     }
-)
-
-
-router.get("/delete-fisico/:id", async (req, res) => {
     try {
-        await tarefasModel.deleteFisico(req.params.id);
-        res.redirect("/");
+        const result = await tarefasModel.create(objDados);
+        res.send(result);
     } catch (erro) {
         console.log(erro);
-        res.redirect("/");
     }
 });
 
-router.get("/delete-logico/:id", async (req, res) => {
-    try {
-        await tarefasModel.deleteLogico(req.params.id);
-        res.redirect("/");
-    } catch (erro) {
-        console.log(erro);
-        res.redirect("/");
-    }
-});
+//exclusão física - hard delete
+router.get("/teste-delete", async (req, res) => {
+
+
+
+})
+
+//exclusão lógica - soft delete
+router.get("/teste-delete-logico", async (req, res) => {
+
+
+})
+
+
+
 
 module.exports = router;

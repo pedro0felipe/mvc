@@ -3,28 +3,35 @@ const pool = require("../../config/pool_conexoes");
 //objeto com funções de acesso ao SGBD
 const tarefasModel = {
     //funções para usar o SQL
-    findAll: async ()=>{
-        try{
-            const [linhas] = await pool.query("select * from tarefas where status_tarefa = 1");
+    findAll: async (offset = null, qtde = null) => {
+        try {
+            if (offset == null && qtde == null) {
+                var [linhas] = await pool.query("select * from tarefas where status_tarefa = 1");
+            } else {
+                var [linhas] = await pool.query(
+                    "select * from tarefas where status_tarefa = 1 " +
+                    " limit ? , ?", [offset, qtde]);
+            }
+
             return linhas;
-        }catch(erro){
+        } catch (erro) {
             return erro;
         }
     },
-    
-    findById: async (id)=>{
-        try{
+
+    findById: async (id) => {
+        try {
             const [linhas] = await pool.query(
                 "select * from tarefas where status_tarefa = 1 and id_tarefa = ? ",
                 [id]
             );
             return linhas;
-        }catch(erro){
+        } catch (erro) {
             return erro;
         }
     },
 
-    create: async (dados)=>{
+    create: async (dados) => {
         /*
             formato json
             {
@@ -33,20 +40,21 @@ const tarefasModel = {
                 situacao:"cod situação",
             }
         */
-       try{
+        try {
+            const situacao = dados.situacao !== undefined && dados.situacao !== null ? dados.situacao : 1;
             const [result] = await pool.query(
                 "insert into tarefas(`nome_tarefa`,`prazo_tarefa`,`situacao_tarefa`) "
                 + "values(?,?,?)",
-                [dados.nome, dados.prazo, dados.situacao]
+                [dados.nome, dados.prazo, situacao]
             )
             return result;
-       }catch(erro){
-        return erro;
-       }
+        } catch (erro) {
+            return erro;
+        }
     },
 
     // UPDATE - Todos os campos
-    update: async (dados)=>{
+    update: async (dados) => {
         /*
             formato json
             {
@@ -56,47 +64,32 @@ const tarefasModel = {
                 situacao:"cod situação",
             }
         */
-       try{
+        try {
             const [result] = await pool.query(
                 "update  tarefas set `nome_tarefa`= ? ,`prazo_tarefa`= ?,`situacao_tarefa`= ? "
                 + " where id_tarefa = ?",
                 [dados.nome, dados.prazo, dados.situacao, dados.id]
             )
             return result;
-       }catch(erro){
-        return erro;
-       }
-    },
-
-
-    
-    // DELETE - físico
-    deleteFisico: async (id)=>{
-        try{
-            const [result] = await pool.query(
-                "delete from tarefas where id_tarefa = ?",
-                [id]
-            );
-            return result;
-        }catch(erro){
+        } catch (erro) {
             return erro;
         }
     },
 
-    // DELETE - lógico
-    deleteLogico: async (id)=>{
-        try{
-            const [result] = await pool.query(
-                "update tarefas set status_tarefa = 0 where id_tarefa = ?",
-                [id]
-            );
-            return result;
-        }catch(erro){
+
+    totRegistros: async () => {
+        try {
+            const [result] = await pool.query("SELECT count(*) as total FROM tarefas;");
+            return result[0].total;
+        } catch (erro) {
             return erro;
         }
     }
 
+    // DELETE - físico
+    // DELETE - lógico
+
 }
 
 //exportar o objeto como um módulo do JS
-module.exports = {tarefasModel} 
+module.exports = { tarefasModel } 
